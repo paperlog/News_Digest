@@ -32,7 +32,14 @@ if st.button("ニュースを読み込む"):
 
             with st.spinner("Geminiが考え中..."):
                 try:
-                    prompt = f"以下のニュースを中学生でもわかるように3つの箇条書きで要約して、敬語で返事はいらないので箇条書きのみ出力して：\n\n{news_content}"
+                    prompt = f"""
+                            以下のニュースを、忙しい経営者のために要約してください。必ず敬語を用いて、箇条書きから始めてください。
+                            1. このニュースが業界に与える影響
+                            2. 3行での簡潔な要約
+                            3. 今後の注目ポイント
+                            \n\n
+                            記事：{news_content}
+                            """"
                     response = model.generate_content(prompt)
                     
                     st.success(response.text)
@@ -42,3 +49,4 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
