@@ -4,6 +4,25 @@ import urllib.parse
 import datetime
 import google.generativeai as genai
 
+prompt = f"""
+あなたはプロのニュースアナリストとして、提供された情報のみを用いて若手ビジネスマン向けの要約を作成してください。
+「直接アクセスできない」などのメタ的なコメントや謝罪は一切不要です。
+必ず以下の【形式】を守って出力してください。
+
+【形式】
+・[10秒でわかる要約]
+（提供された情報から結論を3行で記載）
+
+・[なぜこれが大事なの？]
+（ビジネスへの影響を噛み砕いて解説）
+
+・[明日使える雑談ネタ]
+（一言ヒントを記載）
+
+【提供された情報】
+{news_content}
+"""
+
 # --- サイドバーの設定 ---
 with st.sidebar:
     st.title("このアプリについて")
@@ -41,7 +60,7 @@ st.title("News Digest")
 
 # --- 1日に1回だけ実行する関数（キャッシュ機能） ---
 @st.cache_data(ttl=86400)  # 86400秒 = 24時間キャッシュを保持
-def get_daily_pickup():
+def get_daily_pickup(prompt):
     fixed_keyword = "政治・経済"
     encoded_keyword = urllib.parse.quote(fixed_keyword)
     rss_url = f"https://news.google.com/rss/search?q={encoded_keyword}&hl=ja&gl=JP&ceid=JP:ja"
@@ -53,9 +72,6 @@ def get_daily_pickup():
     # 一番上の記事を取得
     entry = feed.entries[0]
     news_content = f"タイトル: {entry.title}\n内容: {entry.summary}"
-    
-    # Geminiで要約（プロンプトは共通）
-    prompt = f"以下のニュースを若手ビジネスマン向けに要約してください...\n\n{news_content}"
     
     try:
         response = model.generate_content(prompt) # modelは定義済みとします
@@ -114,23 +130,6 @@ if st.button("ニュースを読み込む"):
 
             with st.spinner("Geminiが考え中..."):
                 try:
-                    prompt = f"""
-以下のニュースを、政治・経済に詳しくない若手ビジネスマンのために要約してください。
-必ず敬語を用い、以下の【形式】で出力してください。
-
-【形式】
-・[10秒でわかる要約]
-（専門用語を使わず、結論を3行で記載してください）
-
-・[なぜこれが大事なの？]
-（社会や自分たちの生活にどう影響するか、噛み砕いて解説してください）
-
-・[明日使える雑談ネタ]
-（上司や同僚とこのニュースについて話すときの一言ヒントを記載してください）
-
-記事内容：
-{news_content}
-"""
                     response = model.generate_content(prompt)
                     
                     st.markdown(response.text)
@@ -140,6 +139,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
