@@ -3,8 +3,6 @@ import feedparser
 import urllib.parse
 import google.generativeai as genai
 
-st.set_page_config(layout="wide") # 横幅いっぱいに使う
-
 # Geminiの設定
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-2.5-flash')
@@ -40,15 +38,15 @@ if st.button("ニュースを読み込む"):
 「」や【見本】という文字、余計な前置きは一切不要です。
 
 【見本】
-・3行要約
+・[3行要約]
 ここに内容を記載します。
 ここに内容を記載します。
 ここに内容を記載します。
 
-・業界/社会への影響
+・[業界/社会への影響]
 ここに業界全体への影響を丁寧に記載します。
 
-・今後の注目ポイント
+・[今後の注目ポイント]
 ここに今後の動向を記載します。
 
 記事内容：
@@ -63,6 +61,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
