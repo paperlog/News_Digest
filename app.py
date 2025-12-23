@@ -33,28 +33,29 @@ if st.button("ニュースを読み込む"):
             with st.spinner("Geminiが考え中..."):
                 try:
                     prompt = f"""
-                            以下のニュースを、忙しいサラリーマンのために要約してください。必ず敬語を用いて、箇条書きから始め「」内の内容だけ「と」はのぞいて出力してください。また文字サイズは統一してください。
-                            「
-                            ・3行要約\n\n
-                            　\t内容\n
-                            ・業界/社会への影響\n\n
-                            　\t内容\n
-                            ・今後の注目ポイント\n\n
-                            　\t内容\n
-                             」
+                            以下のニュースを、忙しいサラリーマンのために要約してください。必ず敬語を用いて、箇条書きから始め「」内の内容だけ出力してください。また文字サイズは統一してください。\n
+                            「\n
+                            ・3行要約\\n
+                            　\\t内容\\n
+                            ・業界/社会への影響\\n
+                            　\\t内容\\n
+                            ・今後の注目ポイント\\n
+                            　\\t内容\\n
+                             」\n
                             という形式で出力してください
                             \n\n
                             記事：{news_content}
                             """
                     response = model.generate_content(prompt)
                     
-                    st.success(response.text)
+                    st.markdown(response.text)
                     st.caption(f"[元の記事を読む]({entry.link})")
                 except Exception as e:
                     st.error(f"要約中にエラーが発生しました: {e}")
             
 
             st.divider()
+
 
 
 
