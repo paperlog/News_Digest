@@ -3,6 +3,35 @@ import feedparser
 import urllib.parse
 import google.generativeai as genai
 
+# --- サイドバーの設定 ---
+with st.sidebar:
+    st.title("このアプリについて")
+    
+    # 1. 運営者情報
+    with st.expander("運営者情報"):
+        st.write("""
+        - **運営者**: 夕波/paperlog
+        - **目的**: 若手ビジネスマン向けに政経ニュースをAIで分かりやすく解説します。
+        """)
+
+    # 2. お問い合わせ（ボタンをサイドバーに）
+    with st.expander("お問い合わせ"):
+        st.write("不具合報告やご要望はこちら")
+        st.link_button("フォームを開く", "https://docs.google.com/forms/d/e/1FAIpQLScZcoikvhrNGyq6EJdyb0kWedTkba0kHKkNcMnQQS4rMHDWLw/viewform?usp=dialog")
+
+    # 3. プライバシーポリシー & 免責事項（これらを1つにまとめるとスッキリします）
+    with st.expander("利用規約・免責事項"):
+        st.caption("""
+        **免責事項**
+        - 要約結果はAIによる自動生成であり、正確性を保証しません。
+        - 本アプリの利用による損害について、開発者は一切の責任を負いません。
+        - 記事の著作権は各配信元に帰属します。
+        
+        **プライバシーポリシー**
+        - 検索キーワードはニュース取得と要約に使用されます。
+        - 広告配信（Googleアドセンス）に伴いCookieを使用する場合があります。
+        """)
+
 # Geminiの設定
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-2.5-flash')
@@ -68,30 +97,6 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
-
-# お問い合わせセクション
-st.divider()
-st.subheader("お問い合わせ・不具合報告")
-st.write("アプリの動作不良や、追加してほしい機能の要望はこちらからご連絡ください。")
-
-st.link_button("お問い合わせフォーム", "https://docs.google.com/forms/d/e/1FAIpQLScZcoikvhrNGyq6EJdyb0kWedTkba0kHKkNcMnQQS4rMHDWLw/viewform?usp=dialog")
-
-st.divider()
-st.caption("""
-**免責事項**
-- 本アプリはGoogleニュースのRSSおよびGemini APIを利用して情報を取得・要約しています。
-- 要約の結果はAIによる自動生成であり、その正確性や妥当性を保証するものではありません。
-- 本アプリの利用により生じた直接的・間接的な損害について、開発者は一切の責任を負いません。
-- ニュース記事の著作権は、各配信元に帰属します。
-""")
-
-
-
-
-
-
-
-
 
 
 
