@@ -50,7 +50,7 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 st.title("News Digest")
 
 # --- 1日に1回だけ実行する関数（キャッシュ機能） ---
-@st.cache_data(ttl=86400) # 24時間キャッシュ
+@st.cache_data(ttl=43200) # 12時間ごとに更新（朝・晩で切り替わるよう調整）
 def get_daily_pickup():
     fixed_keyword = "政治・経済"
     encoded_keyword = urllib.parse.quote(fixed_keyword)
@@ -60,27 +60,22 @@ def get_daily_pickup():
     if not feed.entries:
         return None
     
-    # 1. RSSから一番上の記事の情報を取得
-    entry = feed.entries[0]
-    article_url = entry.link
-    
-    # 2. newspaper3kで全文取得を試みる
-    try:
-        full_article = Article(article_url, language='ja')
-        full_article.download()
-        full_article.parse()
-        
-        # 本文が取得できればそれを使い、短すぎればRSSのサマリーを使う
-        if len(full_article.text) > 100:
-            news_content = f"タイトル: {full_article.title}\n本文: {full_article.text[:2000]}"
-        else:
-            news_content = f"タイトル: {entry.title}\n内容: {entry.summary}"
-    except Exception:
-        # 失敗した場合はRSSの情報をバックアップとして使う
-        news_content = f"タイトル: {entry.title}\n内容: {entry.summary}"
-
-    # 3. Gemini APIで要約
-    prompt = f"""
+    # 最大3つの記事までリトライを試みる
+    for entry in feed.entries[:3]:
+        article_url = entry.link
+        try:
+            # 本文取得の試行
+            full_article = Article(article_url, language='ja')
+            full_article.download()
+            full_article.parse()
+            
+            if len(full_article.text) > 200:
+                content = f"タイトル: {full_article.title}\n本文: {full_article.text[:2000]}"
+            else:
+                content = f"タイトル: {entry.title}\n内容: {entry.summary}"
+            
+            # Geminiで要約試行
+            prompt = f"""
 あなたは若手ビジネスマン向けのニュース解説者です。
 前置き（「多忙なところ〜」「解説しましょう」等）は一切禁止し、即座に内容を出力してください。
 専門用語（デカップリング、地政学的リスク、バタフライエフェクト等）は使わず、誰でもわかる言葉に言い換えてください。
@@ -99,18 +94,21 @@ def get_daily_pickup():
 【ニュース情報】
 {news_content}
 """
-    
-    try:
-        response = model.generate_content(prompt) # modelは定義済みとします
-    
-        return {
-            "title": entry.title,
-            "text": response.text,
-            "link": article_url
-        }
-    except:
-        return None
-    
+            response = model.generate_content(prompt)
+            
+            # 成功したら辞書を返して終了（ループを抜ける）
+            if response.text:
+                return {
+                    "title": entry.title,
+                    "text": response.text,
+                    "link": article_url
+                }
+        except Exception as e:
+            # 失敗した場合はログに出力して次の記事へ
+            print(f"記事取得失敗({article_url}): {e}")
+            continue
+            
+    return None # 全部ダメだった場合
 
 # --- 2. トップに「本日のピックアップ」を表示 ---
 st.subheader("本日のピックアップニュース")
@@ -188,6 +186,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
