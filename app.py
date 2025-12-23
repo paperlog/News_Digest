@@ -1,6 +1,7 @@
 import streamlit as st
 import feedparser
 import urllib.parse
+import datetime
 import google.generativeai as genai
 
 # --- サイドバーの設定 ---
@@ -37,6 +38,48 @@ genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-2.5-flash')
 
 st.title("News Digest")
+
+# --- 1日に1回だけ実行する関数（キャッシュ機能） ---
+@st.cache_data(ttl=86400)  # 86400秒 = 24時間キャッシュを保持
+def get_daily_pickup():
+    mykey="政治・経済"
+    encoded_keyword = urllib.parse.quote(fixed_keyword)
+    rss_url = f"https://news.google.com/rss/search?q={encoded_keyword}&hl=ja&gl=JP&ceid=JP:ja"
+    
+    feed = feedparser.parse(rss_url)
+    if not feed.entries:
+        return None
+    
+    # 一番上の記事を取得
+    entry = feed.entries[0]
+    news_content = f"タイトル: {entry.title}\n内容: {entry.summary}"
+    
+    # Geminiで要約（プロンプトは共通）
+    prompt = f"以下のニュースを若手ビジネスマン向けに要約してください...\n\n{news_content}"
+    
+    try:
+        response = model.generate_content(prompt) # modelは定義済みとします
+        return {"title": entry.title, "text": response.text, "link": entry.link}
+    except:
+        return None
+
+# --- メイン画面の表示 ---
+st.title("paperlog：若手のための10秒政治・政経要約")
+
+# --- 2. トップに「本日のピックアップ」を表示 ---
+st.subheader("本日のピックアップニュース")
+daily_data = get_daily_pickup()
+
+if daily_data:
+    with st.expander(f"今日の重要トピック：{daily_data['title']}", expanded=True):
+        st.markdown(daily_data['text'])
+        st.caption(f"[元の記事を読む]({daily_data['link']})")
+else:
+    st.write("今日のニュースを読み込み中です...")
+
+st.divider()
+
+# --------メイン---------
 
 news_categories = [
     "新NISA", "ベースアップ", "賃上げ", "ふるさと納税", "円安 影響", "物価高 対策",
@@ -97,6 +140,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
