@@ -2,4 +2,5 @@ streamlit
 feedparser
 google-generativeai
 newspaper3k
+lxml_html_clean
 nltk
