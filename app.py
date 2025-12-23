@@ -3,6 +3,16 @@ import feedparser
 import urllib.parse
 import datetime
 import google.generativeai as genai
+from newspaper import Article
+import nltk
+
+# 起動時に一度だけ必要なデータをダウンロード
+@st.cache_resource
+def download_nltk_data():
+    nltk.download('punkt')
+    nltk.download('punkt_tab')
+
+download_nltk_data()
 
 # --- サイドバーの設定 ---
 with st.sidebar:
@@ -40,7 +50,7 @@ model = genai.GenerativeModel('gemini-2.5-flash')
 st.title("News Digest")
 
 # --- 1日に1回だけ実行する関数（キャッシュ機能） ---
-@st.cache_data(ttl=86400)  # 86400秒 = 24時間キャッシュを保持
+@st.cache_data(ttl=86400) # 24時間キャッシュ
 def get_daily_pickup():
     fixed_keyword = "政治・経済"
     encoded_keyword = urllib.parse.quote(fixed_keyword)
@@ -50,24 +60,41 @@ def get_daily_pickup():
     if not feed.entries:
         return None
     
-    # 一番上の記事を取得
+    # 1. RSSから一番上の記事の情報を取得
     entry = feed.entries[0]
-    news_content = f"タイトル: {entry.title}\n内容: {entry.summary}"
+    article_url = entry.link
+    
+    # 2. newspaper3kで全文取得を試みる
+    try:
+        full_article = Article(article_url, language='ja')
+        full_article.download()
+        full_article.parse()
+        
+        # 本文が取得できればそれを使い、短すぎればRSSのサマリーを使う
+        if len(full_article.text) > 100:
+            news_content = f"タイトル: {full_article.title}\n本文: {full_article.text[:2000]}"
+        else:
+            news_content = f"タイトル: {entry.title}\n内容: {entry.summary}"
+    except Exception:
+        # 失敗した場合はRSSの情報をバックアップとして使う
+        news_content = f"タイトル: {entry.title}\n内容: {entry.summary}"
 
+    # 3. Gemini APIで要約
     prompt = f"""
-あなたはプロのニュースアナリストとして、提供された情報のみを用いて若手ビジネスマン向けの要約を作成してください。
-「直接アクセスできない」などのメタ的なコメントや謝罪は一切不要です。
-必ず以下の【形式】を守って出力してください。
+あなたは、一流経済紙のベテラン編集者として、多忙な若手ビジネスマンに「このニュースの裏側」を教える役割を担っています。
+
+与えられたニュース情報を元に、あなたの持つ幅広い知識（政治、経済、社会の背景）を総動員して、
+単なる要約ではない、洞察に満ちた解説を作成してください。
 
 【形式】
 ・[10秒でわかる要約]
-（提供された情報から結論を3行で記載）
+（表面的な事象だけでなく、「結局、何が起きたのか」を本質的に3行で記載）
 
 ・[なぜこれが大事なの？]
-（ビジネスへの影響を噛み砕いて解説）
+（これが業界や日本経済全体にどのような連鎖反応（バタフライエフェクト）を起こすか、200文字程度で論理的に解説）
 
 ・[明日使える雑談ネタ]
-（一言ヒントを記載）
+（上司や取引先との会話で、「へぇ、そんな視点があるのか」と思われるような、一歩踏み込んだ質問や意見を提案）
 
 【提供された情報】
 {news_content}
@@ -75,9 +102,15 @@ def get_daily_pickup():
     
     try:
         response = model.generate_content(prompt) # modelは定義済みとします
-        return {"title": entry.title, "text": response.text, "link": entry.link}
+    
+        return {
+            "title": entry.title,
+            "text": response.text,
+            "link": article_url
+        }
     except:
         return None
+    
 
 # --- 2. トップに「本日のピックアップ」を表示 ---
 st.subheader("本日のピックアップニュース")
@@ -128,19 +161,20 @@ if st.button("ニュースを読み込む"):
             with st.spinner("Geminiが考え中..."):
                 try:
                     prompt = f"""
-あなたはプロのニュースアナリストとして、提供された情報のみを用いて若手ビジネスマン向けの要約を作成してください。
-「直接アクセスできない」などのメタ的なコメントや謝罪は一切不要です。
-必ず以下の【形式】を守って出力してください。
+あなたは、一流経済紙のベテラン編集者として、多忙な若手ビジネスマンに「このニュースの裏側」を教える役割を担っています。
+
+与えられたニュース情報を元に、あなたの持つ幅広い知識（政治、経済、社会の背景）を総動員して、
+単なる要約ではない、洞察に満ちた解説を作成してください。
 
 【形式】
 ・[10秒でわかる要約]
-（提供された情報から結論を3行で記載）
+（表面的な事象だけでなく、「結局、何が起きたのか」を本質的に3行で記載）
 
 ・[なぜこれが大事なの？]
-（ビジネスへの影響を噛み砕いて解説）
+（これが業界や日本経済全体にどのような連鎖反応（バタフライエフェクト）を起こすか、200文字程度で論理的に解説）
 
 ・[明日使える雑談ネタ]
-（一言ヒントを記載）
+（上司や取引先との会話で、「へぇ、そんな視点があるのか」と思われるような、一歩踏み込んだ質問や意見を提案）
 
 【提供された情報】
 {news_content}
@@ -154,6 +188,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
