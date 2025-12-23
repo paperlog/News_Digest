@@ -32,7 +32,7 @@ if st.button("ニュースを読み込む"):
 
             with st.spinner("Geminiが考え中..."):
                 try:
-                    prompt = f"以下のニュースを中学生でもわかるように3つの箇条書きで要約して：\n\n{news_content}"
+                    prompt = f"以下のニュースを中学生でもわかるように3つの箇条書きで要約して、敬語で返事はいらないので箇条書きのみ出力して：\n\n{news_content}"
                     response = model.generate_content(prompt)
                     
                     st.success(response.text)
@@ -40,4 +40,5 @@ if st.button("ニュースを読み込む"):
                 except Exception as e:
                     st.error(f"要約中にエラーが発生しました: {e}")
             
+
             st.divider()
