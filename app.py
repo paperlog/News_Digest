@@ -19,7 +19,7 @@ news_categories = [
 # ユーザーが入力する代わりに選択肢を作る
 keyword = st.selectbox("テーマ選択", news_categories)
 
-keyword = st.text_input("手動入力欄(調べたいテーマがないとき)", news_categories)
+keyword = st.text_input("手動入力欄(調べたいテーマがないとき)", keyword)
 
 encoded_keyword = urllib.parse.quote(keyword)
 
@@ -84,6 +84,7 @@ st.caption("""
 - 本アプリの利用により生じた直接的・間接的な損害について、開発者は一切の責任を負いません。
 - ニュース記事の著作権は、各配信元に帰属します。
 """)
+
 
 
 
