@@ -79,9 +79,6 @@ def get_daily_pickup():
     except:
         return None
 
-# --- メイン画面の表示 ---
-st.title("paperlog：若手のための10秒政治・政経要約")
-
 # --- 2. トップに「本日のピックアップ」を表示 ---
 st.subheader("本日のピックアップニュース")
 daily_data = get_daily_pickup()
@@ -157,6 +154,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
