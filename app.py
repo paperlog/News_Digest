@@ -92,7 +92,7 @@ def get_daily_pickup():
 （上司や同僚にそのまま言える意外な事実の「短文」を2つまで）
 
 【ニュース情報】
-{news_content}
+{content}
 """
             response = model.generate_content(prompt)
             
@@ -186,6 +186,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
