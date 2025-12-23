@@ -7,10 +7,10 @@ import google.generativeai as genai
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-st.title("📰 Gemini 爆速ニュース要約")
+st.title("📰ニュース要約")
 
 # ユーザーが入力したキーワードをURL用にエンコード
-keyword = st.text_input("検索したいキーワード", "人工知能")
+keyword = st.text_input("検索したいキーワード", "今日のニュース")
 encoded_keyword = urllib.parse.quote(keyword)
 
 # GoogleニュースのRSS URL（日本語、日本リージョン設定）
@@ -61,6 +61,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
