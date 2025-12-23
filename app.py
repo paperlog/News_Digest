@@ -3,6 +3,8 @@ import feedparser
 import urllib.parse
 import google.generativeai as genai
 
+st.set_page_config(layout="wide") # 横幅いっぱいに使う
+
 # Geminiの設定
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-2.5-flash')
@@ -61,6 +63,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
