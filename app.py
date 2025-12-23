@@ -41,7 +41,7 @@ st.title("News Digest")
 
 # --- 1日に1回だけ実行する関数（キャッシュ機能） ---
 @st.cache_data(ttl=86400)  # 86400秒 = 24時間キャッシュを保持
-def get_daily_pickup(prompt):
+def get_daily_pickup():
     fixed_keyword = "政治・経済"
     encoded_keyword = urllib.parse.quote(fixed_keyword)
     rss_url = f"https://news.google.com/rss/search?q={encoded_keyword}&hl=ja&gl=JP&ceid=JP:ja"
@@ -157,6 +157,7 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
 
 
