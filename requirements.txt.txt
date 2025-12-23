@@ -1,3 +1,0 @@
-streamlit
-feedparser
-google-generativeai
