@@ -7,7 +7,7 @@ import google.generativeai as genai
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 model = genai.GenerativeModel('gemini-2.5-flash')
 
-st.title("📰ニュース要約")
+st.title("News Digest")
 
 # ユーザーが入力したキーワードをURL用にエンコード
 keyword = st.text_input("検索したいキーワード", "今日のニュース")
@@ -67,9 +67,7 @@ st.divider()
 st.subheader("📩 お問い合わせ・不具合報告")
 st.write("アプリの動作不良や、追加してほしい機能の要望はこちらからご連絡ください。")
 
-col1= st.columns(1)
-with col1:
-    st.link_button("お問い合わせフォーム", "https://docs.google.com/forms/d/e/1FAIpQLScZcoikvhrNGyq6EJdyb0kWedTkba0kHKkNcMnQQS4rMHDWLw/viewform?usp=dialog")
+st.link_button("お問い合わせフォーム", "https://docs.google.com/forms/d/e/1FAIpQLScZcoikvhrNGyq6EJdyb0kWedTkba0kHKkNcMnQQS4rMHDWLw/viewform?usp=dialog")
 
 st.divider()
 st.caption("""
@@ -79,6 +77,7 @@ st.caption("""
 - 本アプリの利用により生じた直接的・間接的な損害について、開発者は一切の責任を負いません。
 - ニュース記事の著作権は、各配信元に帰属します。
 """)
+
 
 
 
