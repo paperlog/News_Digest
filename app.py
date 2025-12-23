@@ -39,7 +39,7 @@ if st.button("ニュースを読み込む"):
                             3. 今後の注目ポイント
                             \n\n
                             記事：{news_content}
-                            """"
+                            """
                     response = model.generate_content(prompt)
                     
                     st.success(response.text)
@@ -49,4 +49,5 @@ if st.button("ニュースを読み込む"):
             
 
             st.divider()
+
 
