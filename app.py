@@ -67,8 +67,7 @@ st.divider()
 st.subheader("📩 お問い合わせ・不具合報告")
 st.write("アプリの動作不良や、追加してほしい機能の要望はこちらからご連絡ください。")
 
-# GoogleフォームやXへのリンクボタン
-col1, col2 = st.columns(2)
+col1= st.columns(1)
 with col1:
     st.link_button("お問い合わせフォーム", "https://docs.google.com/forms/d/e/1FAIpQLScZcoikvhrNGyq6EJdyb0kWedTkba0kHKkNcMnQQS4rMHDWLw/viewform?usp=dialog")
 
@@ -80,6 +79,7 @@ st.caption("""
 - 本アプリの利用により生じた直接的・間接的な損害について、開発者は一切の責任を負いません。
 - ニュース記事の著作権は、各配信元に帰属します。
 """)
+
 
 
 
