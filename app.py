@@ -227,12 +227,13 @@ if st.button("ニュースを読み込む"):
         
         if results:
             for i, res in enumerate(results):
-                st.markdown(f"## 記事 {i+1}: {res['title']}")
+                st.markdown(f"### 記事 {i+1}: {res['title']}")
                 st.caption(f"公開日: {res['published']}")
                 st.markdown(res['text'])
                 st.caption(f"[元の記事を読む]({res['link']})")
                 st.divider() # 記事の間に区切り線を入れる
         else:
             st.warning("要約できるニュースが見つかりませんでした。別のキーワードを試してください。")
+
 
 
