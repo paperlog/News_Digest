@@ -1,10 +1,23 @@
 import streamlit as st
 import feedparser
 import urllib.parse
-import datetime
+from datetime import datetime, timedelta
 import google.generativeai as genai
 from newspaper import Article
 import nltk
+
+def format_to_jst(date_str):
+    """GMT等の日付文字列を日本時間の読みやすい形式に変換する"""
+    try:
+        # RSSの日付形式（例: Mon, 24 Dec 2025 10:00:00 GMT）を解析
+        # ※feedparserのpublished_parsedを使うとより確実です
+        dt_utc = datetime.strptime(date_str, '%a, %d %b %Y %H:%M:%S %Z')
+        # 9時間加算して日本時間にする
+        dt_jst = dt_utc + timedelta(hours=9)
+        return dt_jst.strftime('%Y年%m月%d日 %H:%M')
+    except:
+        # 変換に失敗した場合は元の文字列をそのまま返す
+        return date_str
 
 # 起動時に一度だけ必要なデータをダウンロード
 @st.cache_resource
@@ -98,10 +111,13 @@ def get_daily_pickup():
             
             # 成功したら辞書を返して終了（ループを抜ける）
             if response.text:
+                # publishedを日本時間に変換してから格納
+                jst_date = format_to_jst(entry.published)
                 return {
                     "title": entry.title,
                     "text": response.text,
-                    "link": article_url
+                    "link": article_url,
+                    "published": jst_date
                 }
         except Exception as e:
             # 失敗した場合はログに出力して次の記事へ
@@ -160,11 +176,13 @@ def get_summarized_news(fixed_keyword):
             response = model.generate_content(prompt)
             
             if response.text:
+                # publishedを日本時間に変換してから格納
+                jst_date = format_to_jst(entry.published)
                 summarized_results.append({
                     "title": entry.title,
                     "text": response.text,
                     "link": article_url,
-                    "published": entry.published # 日付も取っておくと便利
+                    "published": jst_date
                 })
         except Exception as e:
             print(f"記事取得失敗({article_url}): {e}")
@@ -178,6 +196,7 @@ daily_data = get_daily_pickup()
 
 if daily_data:
     with st.expander(f"今日の重要トピック：{daily_data['title']}", expanded=True):
+        st.caption(f"公開日: {res['published']}")
         st.markdown(daily_data['text'])
         st.caption(f"[元の記事を読む]({daily_data['link']})")
 else:
@@ -215,3 +234,4 @@ if st.button("ニュースを読み込む"):
                 st.divider() # 記事の間に区切り線を入れる
         else:
             st.warning("要約できるニュースが見つかりませんでした。別のキーワードを試してください。")
+
