@@ -110,6 +110,66 @@ def get_daily_pickup():
             
     return None # 全部ダメだった場合
 
+# 検索結果も短時間キャッシュ（例: 1時間）
+@st.cache_data(ttl=3600)
+def get_summarized_news(fixed_keyword):
+    encoded_keyword = urllib.parse.quote(fixed_keyword)
+    rss_url = f"https://news.google.com/rss/search?q={encoded_keyword}&hl=ja&gl=JP&ceid=JP:ja"
+    
+    feed = feedparser.parse(rss_url)
+    if not feed.entries:
+        return None
+    
+    # 最大3つの記事までリトライを試みる
+    for entry in feed.entries[:3]:
+        article_url = entry.link
+        try:
+            # 本文取得の試行
+            full_article = Article(article_url, language='ja')
+            full_article.download()
+            full_article.parse()
+            
+            if len(full_article.text) > 200:
+                content = f"タイトル: {full_article.title}\n本文: {full_article.text[:2000]}"
+            else:
+                content = f"タイトル: {entry.title}\n内容: {entry.summary}"
+            
+            # Geminiで要約試行
+            prompt = f"""
+あなたは若手ビジネスマン向けのニュース解説者です。
+前置き（「多忙なところ〜」「解説しましょう」等）は一切禁止し、即座に内容を出力してください。
+専門用語（デカップリング、地政学的リスク、バタフライエフェクト等）は使わず、誰でもわかる言葉に言い換えてください。
+全体的に短く、簡潔にまとめてください。また、必ず敬語を使用してください。
+
+【形式】
+・[10秒でわかる要約]
+（結論を3行以内で。専門用語は禁止）
+
+・[なぜこれが大事なの？]
+（自分たちの仕事や生活にどう影響するか、100文字程度で簡単に）
+
+・[明日使える雑談ネタ]
+（上司や同僚にそのまま言える意外な事実の「短文」を2つまで）
+
+【ニュース情報】
+{content}
+"""
+            response = model.generate_content(prompt)
+            
+            # 成功したら辞書を返して終了（ループを抜ける）
+            if response.text:
+                return {
+                    "title": entry.title,
+                    "text": response.text,
+                    "link": article_url
+                }
+        except Exception as e:
+            # 失敗した場合はログに出力して次の記事へ
+            print(f"記事取得失敗({article_url}): {e}")
+            continue
+            
+    return None # 全部ダメだった場合
+
 # --- 2. トップに「本日のピックアップ」を表示 ---
 st.subheader("本日のピックアップニュース")
 daily_data = get_daily_pickup()
@@ -132,81 +192,27 @@ news_categories = [
     "米中関係", "FRB 利上げ", "原油価格 動向"
 ]
 
-# ユーザーが入力する代わりに選択肢を作る
-keyword = st.selectbox("テーマ選択", news_categories)
+# ユーザーのキーワード入力
+selected_keyword = st.selectbox("テーマ選択", news_categories)
+manual_keyword = st.text_input("手動入力欄(調べたいテーマがないとき)")
 
-keyword = st.text_input("手動入力欄(調べたいテーマがないとき)", keyword)
-
-encoded_keyword = urllib.parse.quote(keyword)
-
-# GoogleニュースのRSS URL（日本語、日本リージョン設定）
-rss_url = f"https://news.google.com/rss/search?q={encoded_keyword}&hl=ja&gl=JP&ceid=JP:ja"
+# 手動入力があればそちらを優先、なければ選択肢を使う
+target_keyword = manual_keyword if manual_keyword else selected_keyword
 
 if st.button("ニュースを読み込む"):
-    # RSSを解析
-    feed = feedparser.parse(rss_url)
-    
-    if not feed.entries:
-        st.warning("ニュースが見つかりませんでした。")
-    else:
-        for entry in feed.entries[:3]: # 最新5件を表示
-            st.markdown(f"### {entry.title}")
-            st.write(f"📅 {entry.published}")
+    with st.spinner(f"「{target_keyword}」に関するニュースを要約中..."):
+        # ここでキャッシュ関数を呼び出す
+        result = get_summarized_news(target_keyword)
+        
+        if result:
+            st.markdown(f"### {result['title']}")
+            # 注：get_summarized_news内で日付(published)を返していない場合は
+            # 辞書に追加するか、ここでは省略します。
             
-            # 要約用のテキスト（タイトルとサマリーを結合）
-            news_content = f"タイトル: {entry.title}\n内容: {entry.summary}"
+            st.markdown(result['text'])
+            st.caption(f"[元の記事を読む]({result['link']})")
+            st.success("最新の要約を表示しました（キャッシュ有効期間：1時間）")
+        else:
+            st.warning("関連するニュースが見つからなかったか、要約に失敗しました。")
 
-            with st.spinner("Geminiが考え中..."):
-                try:
-                    prompt = f"""
-あなたは若手ビジネスマン向けのニュース解説者です。
-前置き（「多忙なところ〜」「解説しましょう」等）は一切禁止し、即座に内容を出力してください。
-専門用語（デカップリング、地政学的リスク、バタフライエフェクト等）は使わず、誰でもわかる言葉に言い換えてください。
-全体的に短く、簡潔にまとめてください。また、敬語を必ず使用してください。
-
-【形式】
-・[10秒でわかる要約]
-（結論を3行以内で。専門用語は禁止）
-
-・[なぜこれが大事なの？]
-（自分たちの仕事や生活にどう影響するか、100文字程度で簡単に）
-
-・[明日使える雑談ネタ]
-（上司や同僚にそのまま言える意外な事実の「短文」を2つまで）
-
-【ニュース情報】
-{news_content}
-"""
-                    response = model.generate_content(prompt)
-                    
-                    st.markdown(response.text)
-                    st.caption(f"[元の記事を読む]({entry.link})")
-                except Exception as e:
-                    st.error(f"要約中にエラーが発生しました: {e}")
-            
-
-            st.divider()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    st.divider()
