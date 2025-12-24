@@ -118,13 +118,17 @@ def get_summarized_news(fixed_keyword):
     
     feed = feedparser.parse(rss_url)
     if not feed.entries:
-        return None
+        return [] # 見つからない場合は空のリストを返す
     
-    # 最大3つの記事までリトライを試みる
-    for entry in feed.entries[:3]:
+    summarized_results = [] # 成功した結果を溜めるリスト
+    
+    # 5つくらいの記事を候補にして、その中から2つ成功するまで回す
+    for entry in feed.entries[:5]:
+        if len(summarized_results) >= 2: # 2記事溜まったら終了
+            break
+            
         article_url = entry.link
         try:
-            # 本文取得の試行
             full_article = Article(article_url, language='ja')
             full_article.download()
             full_article.parse()
@@ -134,11 +138,10 @@ def get_summarized_news(fixed_keyword):
             else:
                 content = f"タイトル: {entry.title}\n内容: {entry.summary}"
             
-            # Geminiで要約試行
             prompt = f"""
 あなたは若手ビジネスマン向けのニュース解説者です。
-前置き（「多忙なところ〜」「解説しましょう」等）は一切禁止し、即座に内容を出力してください。
-専門用語（デカップリング、地政学的リスク、バタフライエフェクト等）は使わず、誰でもわかる言葉に言い換えてください。
+前置きは一切禁止し、即座に内容を出力してください。
+専門用語は使わず、誰でもわかる言葉に言い換えてください。
 全体的に短く、簡潔にまとめてください。また、必ず敬語を使用してください。
 
 【形式】
@@ -156,19 +159,18 @@ def get_summarized_news(fixed_keyword):
 """
             response = model.generate_content(prompt)
             
-            # 成功したら辞書を返して終了（ループを抜ける）
             if response.text:
-                return {
+                summarized_results.append({
                     "title": entry.title,
                     "text": response.text,
-                    "link": article_url
-                }
+                    "link": article_url,
+                    "published": entry.published # 日付も取っておくと便利
+                })
         except Exception as e:
-            # 失敗した場合はログに出力して次の記事へ
             print(f"記事取得失敗({article_url}): {e}")
             continue
             
-    return None # 全部ダメだった場合
+    return summarized_results
 
 # --- 2. トップに「本日のピックアップ」を表示 ---
 st.subheader("本日のピックアップニュース")
@@ -200,19 +202,16 @@ manual_keyword = st.text_input("手動入力欄(調べたいテーマがない�
 target_keyword = manual_keyword if manual_keyword else selected_keyword
 
 if st.button("ニュースを読み込む"):
-    with st.spinner(f"「{target_keyword}」に関するニュースを要約中..."):
-        # ここでキャッシュ関数を呼び出す
-        result = get_summarized_news(target_keyword)
+    with st.spinner(f"「{target_keyword}」に関する最新ニュースを2件要約中..."):
+        # 関数を呼び出す（リストが返ってくる）
+        results = get_summarized_news(target_keyword)
         
-        if result:
-            st.markdown(f"### {result['title']}")
-            # 注：get_summarized_news内で日付(published)を返していない場合は
-            # 辞書に追加するか、ここでは省略します。
-            
-            st.markdown(result['text'])
-            st.caption(f"[元の記事を読む]({result['link']})")
-            st.success("最新の要約を表示しました（キャッシュ有効期間：1時間）")
+        if results:
+            for i, res in enumerate(results):
+                st.markdown(f"## 記事 {i+1}: {res['title']}")
+                st.caption(f"公開日: {res['published']}")
+                st.markdown(res['text'])
+                st.caption(f"[元の記事を読む]({res['link']})")
+                st.divider() # 記事の間に区切り線を入れる
         else:
-            st.warning("関連するニュースが見つからなかったか、要約に失敗しました。")
-
-    st.divider()
+            st.warning("要約できるニュースが見つかりませんでした。別のキーワードを試してください。")
