@@ -196,7 +196,7 @@ daily_data = get_daily_pickup()
 
 if daily_data:
     with st.expander(f"今日の重要トピック：{daily_data['title']}", expanded=True):
-        st.caption(f"公開日: {res['published']}")
+        st.caption(f"公開日: {daily_data['published']}")
         st.markdown(daily_data['text'])
         st.caption(f"[元の記事を読む]({daily_data['link']})")
 else:
@@ -234,4 +234,5 @@ if st.button("ニュースを読み込む"):
                 st.divider() # 記事の間に区切り線を入れる
         else:
             st.warning("要約できるニュースが見つかりませんでした。別のキーワードを試してください。")
+
 
