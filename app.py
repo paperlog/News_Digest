@@ -25,7 +25,7 @@ download_nltk_data()
 
 # Geminiの設定
 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-model = genai.GenerativeModel('gemini-2.0-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 # --- ロジックの共通化 ---
 
@@ -177,3 +177,4 @@ if st.button("ニュースを読み込む"):
                 st.divider()
         else:
             st.warning("ニュースが見てかりませんでした。")
+
