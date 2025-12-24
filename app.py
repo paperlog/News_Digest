@@ -128,7 +128,7 @@ def get_daily_pickup():
     return None # 全部ダメだった場合
 
 # 検索結果も短時間キャッシュ（例: 1時間）
-@st.cache_data(ttl=3600)
+@st.cache_data(ttl=10800)
 def get_summarized_news(fixed_keyword):
     encoded_keyword = urllib.parse.quote(fixed_keyword)
     rss_url = f"https://news.google.com/rss/search?q={encoded_keyword}&hl=ja&gl=JP&ceid=JP:ja"
@@ -234,6 +234,7 @@ if st.button("ニュースを読み込む"):
                 st.divider() # 記事の間に区切り線を入れる
         else:
             st.warning("要約できるニュースが見つかりませんでした。別のキーワードを試してください。")
+
 
 
 
